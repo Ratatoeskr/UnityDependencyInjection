@@ -4,6 +4,13 @@ Dependency Injection via Systems for Unity
 An attempt to use dependency injection in unity via so-called systems. This "framework" is an very early stage, but feel free to give feedback or to contribute :)
 Readme is Work-In-Progress!
 
+# Prerequisites
+This framework is based on latest Unity 2018.3 features such as
+* Package Management
+* RuntimeInitializeOnLoadMethod
+* C# 7.0 / .Net 4.6
+* Test Runner
+
 # How to use
 Create a new system class. It can be a MonoBehaviour or not, doesn't matter. Important: a system requires the system-attribute!
 ```cs
@@ -52,3 +59,15 @@ public class SerializationSystem : ISerializationSystem
   private ISerializationSystem[] _serializeables;
 }
 ```
+
+# Use as package via PackageManager
+Clone this repository. Then edit your `manifest.json` in your own Unity Project and edit the relative path accordingly
+```json
+{
+  "dependencies": {
+    ...
+    "com.finalstudio.udi" : "file:../../../../UDI/UnityDependencyInjection/Assets"
+  }
+}
+```
+
