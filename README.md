@@ -27,7 +27,7 @@ public class MyMonoBehaviourSystem : MonoBehaviour
 ## System-Attribute
 **Scenes** defines in which scenes this system exists. In case of MonoBehaviour the system can already be placed in the scene, but doesn't have to. It will be automatically instantiated otherwise.
 
-# Use your own serialitzed properties via conifgs
+# Use your own serialized properties via configs
 Use your own Config-Classes to expose properties to the inspector. This works also for Non-Monobehaviour types
 ```cs
 [CreateAssetMenu(fileName = "MySystemConfig", menuName = "Config/MySystemConfig")]
