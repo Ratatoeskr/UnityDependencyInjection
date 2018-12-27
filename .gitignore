@@ -34,3 +34,5 @@ sysinfo.txt
 # Builds
 *.apk
 *.unitypackage
+UnityDependencyInjection/.idea/.idea.UnityDependencyInjection/.idea/misc.xml
+UnityDependencyInjection/.idea/

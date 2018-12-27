@@ -1,0 +1,15 @@
+{
+    "name": "com.finalstudio.udi",
+    "displayName": "Unity Dependency Injection",
+    "version": "0.0.1",
+    "unity": "2018.3",
+    "description": "Framework for dependency injection in Unity3D",
+    "keywords": [
+        "dependency",
+        "injection",
+        "systems",
+        "unity",
+        "framework"
+    ],
+    "category": "Framework"
+}
