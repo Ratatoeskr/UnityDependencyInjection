@@ -17,6 +17,7 @@ namespace com.finalstudio.udi
 
         private void OnApplicationFocus(bool hasFocus)
         {
+            if (_notifyStateSystems == null) return; // no  systems to notify!
             for (var i = 0; i < _notifyStateSystems.Length; i++)
             {
                 if (hasFocus) _notifyStateSystems[i].FocusGain();
@@ -26,6 +27,7 @@ namespace com.finalstudio.udi
 
         private void OnApplicationPause(bool pauseStatus)
         {
+            if (_notifyStateSystems == null) return; // no  systems to notify!
             for (var i = 0; i < _notifyStateSystems.Length; i++)
             {
                 if (pauseStatus) _notifyStateSystems[i].Pause();
@@ -35,6 +37,7 @@ namespace com.finalstudio.udi
 
         private void OnApplicationQuit()
         {
+            if (_notifyStateSystems == null) return; // no  systems to notify!
             for (var i = 0; i < _notifyStateSystems.Length; i++)
             {
                 _notifyStateSystems[i].ApplicationQuit();
@@ -43,6 +46,7 @@ namespace com.finalstudio.udi
 
         private void Update()
         {
+            if (_updatedSystems == null) return;
             var deltaTime = Time.deltaTime;
             for (var i = 0; i < _updatedSystems.Length; i++)
             {

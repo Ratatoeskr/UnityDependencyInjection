@@ -29,6 +29,8 @@ namespace com.finalstudio.udi
         private static Type _typeOfSystemInterface;
         private static Type _typeOfGenericList;
         
+        private static readonly Type _typeOfSystemAttribute = typeof(SystemAttribute);
+        
         private static GameObject _systemsGameObject;
         private static SystemController _systemController;
 
@@ -37,7 +39,7 @@ namespace com.finalstudio.udi
         private static readonly BindingFlags BindingFlags = 
             BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
 
-        private static readonly string LogColor = "#88ddaa";
+        private static readonly string LogColor = "#d39c50";
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         internal static void RegisterSystems()
@@ -62,7 +64,7 @@ namespace com.finalstudio.udi
 
         private static void Setup()
         {
-            _systemsGameObject = new GameObject("SERVICES");
+            _systemsGameObject = new GameObject("SYSTEMS");
             _typeOfMonoBehaviour = typeof(MonoBehaviour);
             _typeOfListInterface = typeof(IList);
             _typeOfSystemInterface = typeof(ISystem);
@@ -84,7 +86,7 @@ namespace com.finalstudio.udi
             {                
                 foreach (var t in a.GetTypes())
                 {
-                    var attributes = t.GetCustomAttributes(typeof(SystemAttribute), false);
+                    var attributes = t.GetCustomAttributes(_typeOfSystemAttribute, false);
                     if (attributes.Length == 0) continue;
                     SystemTypes.Add(t);
                 }
@@ -105,7 +107,7 @@ namespace com.finalstudio.udi
             {
                 try
                 {
-                    var attributes = systemType.GetCustomAttributes(typeof(SystemAttribute), false);
+                    var attributes = systemType.GetCustomAttributes(_typeOfSystemAttribute, false);
                     var systemAttribute = ((SystemAttribute) attributes[0]);
                     var hashes = systemAttribute.SceneHashes;
                     if (hashes.Any(h => currentScenes.Contains(h)))
@@ -263,20 +265,25 @@ namespace com.finalstudio.udi
                     }
                     
                     // Interface
-                    if (memberType.IsInterface && _typeOfSystemInterface.IsAssignableFrom(memberType))
+                    if (memberType.IsInterface)
                     {
                         // find implementation
                         var implementationType = SystemTypes.Find(t => memberType.IsAssignableFrom(t));
                         if (implementationType == null)
                             throw new SystemFrameworkException(type,
                                 $"Implementation type of {memberType.Name} could not be found!");
-                        if (!SystemInstances.TryGetValue(implementationType, out var implementation))
-                            throw new SystemFrameworkException(type,
-                                $"Instance type of {implementationType.Name} could not be found!");
-                        member[i].SetUnderlyingType(SystemInstances[type], implementation);
+                        
+                        // Is implementation a system?
+                        var attr = implementationType.GetCustomAttributes(_typeOfSystemAttribute, false);
+                        if (attr.Length > 0)
+                        {
+                            if (SystemInstances.TryGetValue(implementationType, out var implementation))
+                                member[i].SetUnderlyingType(SystemInstances[type], implementation);
+                            continue;                                
+                        }
                     }
                     
-                    var attributes =  memberType.GetCustomAttributes(typeof(SystemAttribute), false);
+                    var attributes =  memberType.GetCustomAttributes(_typeOfSystemAttribute, false);
                     if (attributes.Length == 0) continue;
                     if (!SystemInstances.TryGetValue(memberType, out var memberSystem))
                     {
