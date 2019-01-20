@@ -11,6 +11,10 @@ This framework is based on latest Unity 2018.3 features such as
 * C# 7.0 / .Net 4.6
 * Test Runner
 
+# Differences to existing Frameworks
+There are some great and big frameworks like Zenject which already offers dependency injection for Unity3D.  
+This framework aims to provide next to dependency injection also  a solid design pattern for a fast and streamlined software design solution for Unity3D games. 
+
 # How to use
 Create a new system class. It can be a MonoBehaviour or not, doesn't matter. Important: a system requires the system-attribute!
 ```cs
@@ -30,6 +34,8 @@ public class MyMonoBehaviourSystem : MonoBehaviour
   private MySystem _mySystem;
 }
 ```
+
+You don't have to use constructor injection. This is a current design decision as systems can also be MonoBehaviours which are created without constructors. On the left hand this is being a great and lazy solution as you don't have to mark or further implement injection constructs. On the other hand this leads to compile warnings (649) and code inspection issues. So maybe there will be a attribute later to compensate the named issue.
 
 ## System-Attribute
 **Scenes** defines in which scenes this system exists. In case of MonoBehaviour the system can already be placed in the scene, but doesn't have to. It will be automatically instantiated otherwise.
