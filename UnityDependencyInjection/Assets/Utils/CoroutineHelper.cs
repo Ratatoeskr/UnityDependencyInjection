@@ -16,7 +16,6 @@ namespace com.finalstudio.udi
         {
             Instance.StartCoroutine(Instance.WaitOneFrame(callback));
         }
-
         
         public static void ExecuteAfterSeconds(float seconds, Action callback)
         {
@@ -26,6 +25,11 @@ namespace com.finalstudio.udi
         public static void AwaitOperation(AsyncOperation operation, Action callback)
         {
             Instance.StartCoroutine(Instance.AwaitOperationRoutine(operation, callback));
+        }
+
+        public static Coroutine ExecuteCoroutine(IEnumerator coroutine)
+        {
+            return Instance.StartCoroutine(coroutine);
         }
         
         private IEnumerator WaitForSeconds(float time, Action callback)

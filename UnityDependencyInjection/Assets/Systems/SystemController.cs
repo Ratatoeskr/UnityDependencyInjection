@@ -1,18 +1,23 @@
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace com.finalstudio.udi
 {
-    public class SystemController : MonoBehaviour
+    internal class SystemController : MonoBehaviour
     {
         private INotifySystemUpdate[] _updatedSystems;
         private INotifyGameStates[] _notifyStateSystems;
-        
+        private INotifySystemSceneChanged[] _notifySceneChangedSystems;
+            
         public void SetSystems(
             INotifySystemUpdate[] updatedSystems,
-            INotifyGameStates[] stateSystems)
+            INotifyGameStates[] stateSystems,
+            INotifySystemSceneChanged[] sceneChangeSystems
+            )
         {
             _updatedSystems = updatedSystems;
             _notifyStateSystems = stateSystems;
+            _notifySceneChangedSystems = sceneChangeSystems;
         }
 
         private void OnApplicationFocus(bool hasFocus)
@@ -51,6 +56,22 @@ namespace com.finalstudio.udi
             for (var i = 0; i < _updatedSystems.Length; i++)
             {
                 _updatedSystems[i].UpdateSystem(deltaTime);
+            }
+        }
+
+        public void OnBeforeSceneChanged(ref Scene scene)
+        {
+            for (var i = 0; i < _notifySceneChangedSystems.Length; i++)
+            {
+                _notifySceneChangedSystems[i].OnBeforeSceneChanged(scene);
+            }
+        }
+
+        public void OnSceneChanged(Scene scene)
+        {
+            for (var i = 0; i < _notifySceneChangedSystems.Length; i++)
+            {
+                _notifySceneChangedSystems[i].OnSceneChanged(scene);
             }
         }
     }

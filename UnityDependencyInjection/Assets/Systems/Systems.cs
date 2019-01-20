@@ -29,7 +29,7 @@ namespace com.finalstudio.udi
         private static Type _typeOfSystemInterface;
         private static Type _typeOfGenericList;
         
-        private static readonly Type _typeOfSystemAttribute = typeof(SystemAttribute);
+        private static readonly Type TypeOfSystemAttribute = typeof(SystemAttribute);
         
         private static GameObject _systemsGameObject;
         private static SystemController _systemController;
@@ -56,9 +56,6 @@ namespace com.finalstudio.udi
             GatherSystemTypes();
             GatherSystemConfigs();
             
-            // instantiate services
-            ProcessScene(SceneManager.GetActiveScene());
-            
             Debug.Log("Framework initialization took " + watch.ElapsedMilliseconds + "ms!");
         }
 
@@ -77,24 +74,28 @@ namespace com.finalstudio.udi
 
         private static void GatherSystemConfigs()
         {
-            _systemConfigs = Resources.LoadAll<SystemConfig>(string.Empty);
+            _systemConfigs = Resources.LoadAll<SystemConfig>("Systems");
         }
-        
+         
         private static void GatherSystemTypes()
         {
             foreach (var a in AppDomain.CurrentDomain.GetAssemblies())
             {                
                 foreach (var t in a.GetTypes())
                 {
-                    var attributes = t.GetCustomAttributes(_typeOfSystemAttribute, false);
+                    var attributes = t.GetCustomAttributes(TypeOfSystemAttribute, false);
                     if (attributes.Length == 0) continue;
                     SystemTypes.Add(t);
                 }
             }
         }
 
-        private static void ProcessScene(Scene scene)
-        {            
+        private static void ProcessScene()
+        {
+            // Get all scene listener from the EXISTING systems. Not the new ones!
+            // Otherwise they would  receive the OnSceneLoaded Callback of their own scene 
+            var sceneListener = GetSystemArray(typeof(INotifySystemSceneChanged))
+                .Cast<INotifySystemSceneChanged>().ToArray();
             var sceneCount = SceneManager.sceneCount;
             var currentScenes = new int[sceneCount];
             for (var i = 0; i < sceneCount; i++)
@@ -107,7 +108,7 @@ namespace com.finalstudio.udi
             {
                 try
                 {
-                    var attributes = systemType.GetCustomAttributes(_typeOfSystemAttribute, false);
+                    var attributes = systemType.GetCustomAttributes(TypeOfSystemAttribute, false);
                     var systemAttribute = ((SystemAttribute) attributes[0]);
                     var hashes = systemAttribute.SceneHashes;
                     if (hashes.Any(h => currentScenes.Contains(h)))
@@ -131,7 +132,8 @@ namespace com.finalstudio.udi
 
             _systemController.SetSystems(
                 GetSystemArray(typeof(INotifySystemUpdate)).Cast<INotifySystemUpdate>().ToArray(),
-                GetSystemArray(typeof(INotifyGameStates)).Cast<INotifyGameStates>().ToArray()
+                GetSystemArray(typeof(INotifyGameStates)).Cast<INotifyGameStates>().ToArray(),
+                sceneListener
                 );
 
             CallISystemCallbacks();
@@ -141,7 +143,14 @@ namespace com.finalstudio.udi
         {
             foreach (var system in TempRegisteredSystemCache)
             {
-                system.Constructor();
+                try
+                {
+                    system.Constructor();
+                }
+                catch (Exception e)
+                {
+                    LogError(system, e.ToString()); 
+                }
             }
 
             foreach (var system in TempUnregisteredSystemCache)
@@ -176,7 +185,8 @@ namespace com.finalstudio.udi
             if (!ObjectLocator.FinishedLocating)
                 ObjectLocator.LocateObjects(scene);
             
-            ProcessScene(scene);
+            ProcessScene();
+            _systemController.OnSceneChanged(scene);
         }
 
         private static void UnRegisterType(Type systemType)
@@ -228,7 +238,7 @@ namespace com.finalstudio.udi
 
         private static void ProcessMonoBehaviour(Type type)
         {
-            var instance = UnityEngine.Object.FindObjectOfType(type)
+            var instance = ObjectLocator.FindObjectOfType(type)
                 ?? _systemsGameObject.AddComponent(type);
             
             SystemInstances.Add(type, instance);
@@ -242,7 +252,7 @@ namespace com.finalstudio.udi
             var systemInstances = SystemInstances.Keys;
             foreach (var type in systemInstances)
             {
-                var member = type.GetMembers(BindingFlags);
+                var member = type.GetMembers(BindingFlags); 
                 for (var i = 0; i < member.Length; i++)
                 {
                     if (member[i].MemberType != MemberTypes.Field && member[i].MemberType != MemberTypes.Property)
@@ -270,11 +280,10 @@ namespace com.finalstudio.udi
                         // find implementation
                         var implementationType = SystemTypes.Find(t => memberType.IsAssignableFrom(t));
                         if (implementationType == null)
-                            throw new SystemFrameworkException(type,
-                                $"Implementation type of {memberType.Name} could not be found!");
+                            continue; // not a system, just an ordinary interface -> skip member
                         
                         // Is implementation a system?
-                        var attr = implementationType.GetCustomAttributes(_typeOfSystemAttribute, false);
+                        var attr = implementationType.GetCustomAttributes(TypeOfSystemAttribute, false);
                         if (attr.Length > 0)
                         {
                             if (SystemInstances.TryGetValue(implementationType, out var implementation))
@@ -283,7 +292,7 @@ namespace com.finalstudio.udi
                         }
                     }
                     
-                    var attributes =  memberType.GetCustomAttributes(_typeOfSystemAttribute, false);
+                    var attributes =  memberType.GetCustomAttributes(TypeOfSystemAttribute, false);
                     if (attributes.Length == 0) continue;
                     if (!SystemInstances.TryGetValue(memberType, out var memberSystem))
                     {
@@ -327,12 +336,8 @@ namespace com.finalstudio.udi
         {
             var elementType = memberType.GetElementType();
             if (elementType == null || !elementType.IsInterface) return;
-            // Element type if type of interface: check if interface type is a system interface
-            if (!_typeOfSystemInterface.IsAssignableFrom(elementType))
-                return;
             
-            var length = memberType.GetArrayRank();
-            var array = GetSystemArray(elementType);
+            var array = GetSystemArray(elementType); 
             
             memberInfo.SetUnderlyingType(system, array);
         }
@@ -364,6 +369,30 @@ namespace com.finalstudio.udi
         public static void LogError(object system, string msg)
         {
             Debug.LogErrorFormat($"<color={LogColor}><b>[{system.GetType().Name}]</b> - {Regex.Escape(msg)}</color>");
+        }
+
+        /// <summary>
+        ///     This method has to be called manually because the SceneManager only invokes its callbacks when
+        ///     a scene was already successfully loaded
+        /// </summary>
+        public static void NotifyBeforeSceneChanged()
+        {
+            var activeScene = SceneManager.GetActiveScene();
+            _systemController.OnBeforeSceneChanged(ref activeScene);
+        }
+
+        public static T GetSystem<T>()
+        {
+            var targetType = typeof(T);
+            foreach (var keyValuePair in SystemInstances)
+            {
+                if (targetType.IsAssignableFrom(keyValuePair.Key))
+                    return (T) keyValuePair.Value;
+                if (keyValuePair.Key == targetType)
+                    return (T) keyValuePair.Value;
+            }
+
+            return default;
         }
     }
 }

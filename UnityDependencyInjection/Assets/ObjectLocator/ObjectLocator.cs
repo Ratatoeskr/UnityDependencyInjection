@@ -104,5 +104,14 @@ namespace com.finalstudio.udi
         {
             return CachedComponents.Where(c => c is T).Cast<T>().ToArray();
         }
+
+        public static object FindObjectOfType(Type type)
+        {
+            return CachedComponents.FirstOrDefault(c =>
+            {
+                var toc = c.GetType(); 
+                return toc.IsSubclassOf(type) || toc == type;
+            });
+        }
     }
 }

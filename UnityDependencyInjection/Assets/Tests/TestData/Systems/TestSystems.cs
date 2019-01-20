@@ -1,4 +1,7 @@
 using com.finalstudio.udi;
+using UnityEngine;
+using UnityEngine.Assertions;
+using UnityEngine.SceneManagement;
 
 namespace Tests.TestData.Systems
 {
@@ -39,6 +42,27 @@ namespace Tests.TestData.Systems
         public bool HasConfig()
         {
             return _config != null;
+        }
+    }
+
+    [System(Scenes = new []{"TestScene"})]
+    public class SceneChangedListenerA : INotifySystemSceneChanged
+    {
+        public void Constructor()
+        {
+        }
+
+        public void Destructor()
+        {
+        }
+
+        public void OnSceneChanged(Scene activeScene)
+        {
+            Debug.Log("OnSceneChanged was called!");
+        }
+
+        public void OnBeforeSceneChanged(Scene activeScene)
+        {
         }
     }
 }
