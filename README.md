@@ -56,13 +56,21 @@ Unfortunatly configs **must be placed in the resources folder** for now! This ma
 # Arrays
 You can access other systems by their interface abstractions:
 ```cs
+[System(Scenes = new[] {...}, Config = typeof(...))]
+public class EnemySystem : ISerializedSystem
+{
+   ...
+   public void Serialize() { ... }
+   ...
+}
+
 [System(Scenes = new[] {"MyScene", "AnotherScene"}, Config = typeof(SerializationConfig))]
 public class SerializationSystem : ISerializationSystem
 {
   // automatically set by framework
   public SerializationConfig Config { get; set; }
   // All systems which implements ISerializationSystem. Automatically set by framework!
-  private ISerializationSystem[] _serializeables;
+  private ISerializedSystem[] _serializeables;
 }
 ```
 
